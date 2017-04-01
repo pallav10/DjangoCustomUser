@@ -8,3 +8,9 @@ class IsAuthenticated(permissions.BasePermission):
 
         return request.user.is_authenticated()
 
+
+class UserPermissions(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # check if user is owner
+        return request.user.is_authenticated()
+

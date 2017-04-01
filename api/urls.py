@@ -4,6 +4,7 @@ import views
 
 internal_apis = [
     url(r'^users/$', views.user_registration),
+    url(r'^users/(?P<pk>[0-9]+)/$', views.user_detail),
     ]
 
 urlpatterns = []

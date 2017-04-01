@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from rest_framework import status
 
+from api.models import User
+
 
 def email_validation(data):
     try:
@@ -28,3 +30,16 @@ def password_validation(data):
             return data
     except KeyError:
         raise exceptions_utils.ValidationException(messages.REQUIRED_PASSWORD, status.HTTP_400_BAD_REQUEST)
+
+
+def user_validation(pk):
+    try:
+        user = User.objects.get(pk=pk)
+        return user
+    except User.DoesNotExist:
+        raise exceptions_utils.ValidationException(messages.USER_DOES_NOT_EXISTS, status.HTTP_404_NOT_FOUND)
+
+
+def user_token_validation(token_user_id, pk):
+    if int(pk) != token_user_id:
+        raise exceptions_utils.ValidationException(messages.TOKEN_UNAUTHORIZED, status.HTTP_401_UNAUTHORIZED)

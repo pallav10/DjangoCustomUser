@@ -39,3 +39,7 @@ REQUIRED_PASSWORD = {
 REQUIRED_EMAIL_AND_PASSWORD = {
     MESSAGE: "Email and Password required"
 }
+
+TOKEN_UNAUTHORIZED = {
+    MESSAGE: "You do not have permission to perform this action"
+}
