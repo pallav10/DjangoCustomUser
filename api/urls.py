@@ -7,7 +7,9 @@ internal_apis = [
     url(r'^users/(?P<pk>[0-9]+)/$', views.user_detail),
     ]
 
-urlpatterns = []
+urlpatterns = [
+    url(r'^users/login$', views.user_login),
+]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
 

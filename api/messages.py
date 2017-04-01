@@ -43,3 +43,11 @@ REQUIRED_EMAIL_AND_PASSWORD = {
 TOKEN_UNAUTHORIZED = {
     MESSAGE: "You do not have permission to perform this action"
 }
+
+TOKEN_NOT_FOUND = {
+    MESSAGE: "token must be required"
+}
+
+LOGIN_SUCCESSFUL = {
+    MESSAGE: "Login successful"
+}

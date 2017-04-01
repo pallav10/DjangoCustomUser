@@ -1,10 +1,11 @@
-
+from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 import utils
 import validations_utils
+from api import messages
 from api.permission import UserPermissions
 from exceptions_utils import ValidationException
 from serializers import UserSerializer, UserProfileSerializer
@@ -158,3 +159,153 @@ def user_detail(request, pk):
             return Response(updated_data, status=status.HTTP_200_OK)
         except ValidationException as e:  # Generic exception
             return Response(e.errors, status=e.status)
+
+
+@api_view(['POST'])
+@permission_classes((AllowAny,))
+def user_login(request):
+    """
+    **User Login**
+
+    Login an existing user.
+
+    Used for authenticating the user.
+
+    > POST
+
+    * Requires following fields of users in JSON format:
+
+        1. `email` - String
+        2. `password` - String
+
+    * Returns user profile data on successful login.
+    * Also returns Authentication token to be used by frontend for further
+     communication with backend.
+    * On failure it returns appropriate HTTP status and message in JSON
+    response.
+
+    * Possible HTTP status codes and JSON response:
+
+        * `HTTP_200_OK` on successful login.
+
+        If logged in user is restaurant Admin :
+
+
+                {
+                  "token": string,
+                  "branches": [
+                    {
+                      "id": integer,
+                      "restaurant": integer,
+                      "area": string,
+                      "name": string,
+                      "address": string or null,
+                      "status": string,
+                      "longitude": float or null,
+                      "latitude": float or null,
+                      "city": string or null,
+                      "state": string or null,
+                      "country": string or null,
+                      "country_code": string or null,
+                      "restaurant_contact_no": integer or null,
+                      "users": [
+                        {
+                          "email": string,
+                          "id": integer,
+                          "user_role": integer,
+                          "first_name": string or null,
+                          "last_name": string or null,
+                          "created": datetime string,
+                          "country_code": string or null,
+                          "contact_no": integer,
+                          "city": string or null,
+                          "state": string or null,
+                          "country": string or null
+                        }
+                      ]
+                    }
+                  ],
+                  "restaurant": {
+                      "id": integer,
+                      "area": string,
+                      "name": string,
+                      "address": string or null,
+                      "status": string,
+                      "longitude": float or null,
+                      "latitude": float or null,
+                      "city": string or null,
+                      "state": string or null,
+                      "country": string or null,
+                      "country_code": string or null,
+                      "restaurant_contact_no": integer or null,
+                  }
+                }
+
+        If logged in user is Restaurant manager :
+
+            {
+              "token": string,
+              "user": {
+                "email": string,
+                "id": integer,
+                "user_role": integer,
+                "first_name": string or null,
+                "last_name": string null,
+                "created": string time_stamp,
+                "country_code": string or null,
+                "contact_no": integer,
+                "city": string or null,
+                "state": string or null,
+                "country": string or null
+              },
+              "branch": {
+                "id": integer,
+                "restaurant": integer,
+                "area": string,
+                "name": string,
+                "address": string or null,
+                "status": string ,
+                "longitude": float or null,
+                "latitude": float or null,
+                "city": string or null,
+                "state": string or null,
+                "country": string or null,
+                "country_code": string or null,
+                "restaurant_contact_no":integer or  null
+              }
+            }
+
+        * `HTTP_401_UNAUTHORIZED` for failed login attempt.
+
+                {
+                 "message": "Invalid username or password"
+                }
+
+        * `HTTP_500_INTERNAL_SERVER_ERROR` - Internal server error.
+
+        * `HTTP_404_NOT_FOUND` - When user is not found.
+
+                {
+                 "message": "User with specified email does not exist."
+                }
+    :param request:
+    """
+    try:
+        email = request.data['email']
+        password = request.data['password']
+    except KeyError:
+        return Response(
+            messages.REQUIRED_EMAIL_AND_PASSWORD,
+            status=status.HTTP_400_BAD_REQUEST)
+    try:
+        # response = validations_utils.login_user_existence_validation(email)
+        user = authenticate(email=email, password=password)  # Validates credentials of user.
+    except ValidationException:
+        return Response(messages.INVALID_EMAIL_OR_PASSWORD, status=status.HTTP_401_UNAUTHORIZED)
+    try:
+        login_user = utils.authenticate_user(user, request.data)  # Authorizes the user and returns appropriate data.
+        # token = utils.fetch_token(user)  # fetches the token for authorized user.
+    except ValidationException as e:  # Generic exception
+        return Response(e.errors, status=e.status)
+
+    return Response(login_user, status=status.HTTP_200_OK)
