@@ -28,10 +28,6 @@ REQUIRED_EMAIL_PASSWORD = {
     MESSAGE: "Email and Password required"
 }
 
-PASSWORD_NECESSITY = {
-    MESSAGE: "Password is not acceptable"
-}
-
 REQUIRED_PASSWORD = {
     MESSAGE: "password, password field is required."
 }
@@ -50,4 +46,28 @@ TOKEN_NOT_FOUND = {
 
 LOGIN_SUCCESSFUL = {
     MESSAGE: "Login successful"
+}
+
+REQUIRED_CURRENT_PASSWORD = {
+    MESSAGE: "current_Password required!"
+}
+
+PASSWORD_NECESSITY = {
+    MESSAGE: "Password is not acceptable"
+}
+
+REQUIRED_NEW_PASSWORD = {
+    MESSAGE: "new_Password required!"
+}
+
+PASSWORD_CHANGED = {
+    MESSAGE: "Password changed successfully"
+}
+
+SAME_PASSWORD = {
+    MESSAGE: "New password cannot be same as current password"
+}
+
+CURRENT_PASSWORD_INCORRECT = {
+    MESSAGE: "Current password is incorrect."
 }

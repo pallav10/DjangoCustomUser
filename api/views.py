@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -307,5 +308,73 @@ def user_login(request):
         # token = utils.fetch_token(user)  # fetches the token for authorized user.
     except ValidationException as e:  # Generic exception
         return Response(e.errors, status=e.status)
-
     return Response(login_user, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes((UserPermissions, IsAuthenticated))
+def user_change_password(request, pk):
+    """
+    ### Change Password
+
+    * While changing password for user registered with email, PUT request
+    requires two fields and their values:
+
+        * current_password - String
+        * new_password - String
+
+    * Possible HTTP status codes and JSON response:
+
+        * `HTTP_200_OK` - If password change was successful:
+
+                {
+                 "user_id": integer,
+                 "message": "Password updated successfully"
+                }
+
+        * `HTTP_401_UNAUTHORIZED` - If user provided incorrect value for
+        current_password:
+
+                {
+                 "message": "Current password is incorrect."
+                }
+
+        * `HTTP_400_BAD_REQUEST` - If new_password is same as current_password:
+
+                {
+                 "message": "New password cannot be same as current password"
+                }
+
+        * `HTTP_500_INTERNAL_SERVER_ERROR` - Internal server error
+        :param pk:
+        :param request:
+    """
+    try:
+        user = validations_utils.user_validation(pk)  # Validates if user exists or not.
+        validations_utils.user_token_validation(request.auth.user_id, pk)  # Validates user's Token authentication.
+    except ValidationException as e:  # Generic exception
+        return Response(e.errors, status=e.status)
+    if request.method == 'PUT':
+        try:
+            request.data['current_password']
+        except KeyError:
+            return Response(messages.REQUIRED_CURRENT_PASSWORD,
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            new_password = request.data['new_password']
+            if new_password is None or not re.match(r'[A-Za-z0-9@#$%^&+=]+', new_password):
+                return Response(messages.PASSWORD_NECESSITY, status=status.HTTP_406_NOT_ACCEPTABLE)
+            else:
+                pass
+        except KeyError:
+            return Response(messages.REQUIRED_NEW_PASSWORD, status=status.HTTP_400_BAD_REQUEST)
+        data_keys = request.data.keys()
+        # Change Password will only require current_password and new_password.
+        if 'current_password' in data_keys and 'new_password' in data_keys:
+            current_password = request.data['current_password']
+            new_password = request.data['new_password']
+            try:
+                password = utils.change_password(current_password, new_password, user)  # Changes password.
+                return Response(password, status=status.HTTP_200_OK)
+            except ValidationException as e:
+                return Response(e.errors, status=e.status)

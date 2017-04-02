@@ -30,7 +30,6 @@ def hash_password(password):
 
 def create_user(data):
     user_serializer = UserSerializer(data=data)
-    # print(repr(user_serializer))
     if user_serializer.is_valid():
         user = user_serializer.save()
         token = Token.objects.create(user=user)
@@ -66,3 +65,20 @@ def authenticate_user(user, data):
             raise exceptions_utils.ValidationException(user_serializer.errors, status.HTTP_400_BAD_REQUEST)
     else:
         raise exceptions_utils.ValidationException(messages.INVALID_EMAIL_OR_PASSWORD, status.HTTP_401_UNAUTHORIZED)
+
+
+def change_password(current_password, new_password, user):
+    if user.check_password(current_password):
+
+        if current_password != new_password:
+            user.set_password(new_password)
+            user.is_password_changed = True
+            user.save()
+            resp = {'user_id': user.id}
+            resp.update(messages.PASSWORD_CHANGED)
+            return resp
+        else:
+            raise exceptions_utils.ValidationException(messages.SAME_PASSWORD, status.HTTP_406_NOT_ACCEPTABLE)
+    else:
+        raise exceptions_utils.ValidationException(messages.CURRENT_PASSWORD_INCORRECT,
+                                                   status.HTTP_401_UNAUTHORIZED)
