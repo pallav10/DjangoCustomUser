@@ -1,7 +1,14 @@
-from django.contrib.auth.hashers import make_password
-from rest_framework.authtoken.models import Token
+import hashlib
+import random
 
+import datetime
+from django.contrib.auth.hashers import make_password
+from django.core.mail import EmailMessage
+from rest_framework.authtoken.models import Token
+from django.template.loader import get_template
+from django.conf import settings
 from api import messages
+from api.models import User, UserResetPassword
 from serializers import UserSerializer, UserProfileSerializer
 import exceptions_utils
 from rest_framework import status
@@ -82,3 +89,48 @@ def change_password(current_password, new_password, user):
     else:
         raise exceptions_utils.ValidationException(messages.CURRENT_PASSWORD_INCORRECT,
                                                    status.HTTP_401_UNAUTHORIZED)
+
+
+def create_reset_password_key(email):
+    user = User.objects.get(email=email)
+    try:
+        user_reset_password = UserResetPassword.objects.get(users_id=user.id)
+        user_reset_password.delete()
+    except UserResetPassword.DoesNotExist:
+        pass
+    salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+    key = hashlib.sha1(salt + email).hexdigest()
+    from django.utils import timezone
+    key_expires = timezone.now() + datetime.timedelta(days=1)
+    user_reset_password = UserResetPassword(users=user, key=key, key_expires=key_expires)
+    user_reset_password.save()
+    return key
+
+
+def send_reset_password_mail(user, key, domain):
+    url_body = "http://%s/api/users/%s/password_reset/confirm/%s" % (
+        domain, user.id, key)
+    html_template = get_template('password_reset_email_template.html')
+    content_passed_to_template = ({'url_body': url_body})
+    html_content = html_template.render(content_passed_to_template)
+    send_email = EmailMessage(
+        'Password Reset',
+        html_content,
+        settings.EMAIL_HOST_USER,
+        [user.email],
+    )
+    send_email.content_subtype = "html"
+    send_email.send()
+
+
+def reset_password(user_reset_password, password):
+    if user_reset_password:
+        pk = user_reset_password.users_id
+        user = User.objects.get(id=pk)
+        user.set_password(password)
+        # user.is_reset_password = True
+        user.save()
+        response = 'Password changed successfully! :)'
+    else:
+        response = 'Link is not valid. :('
+    return response

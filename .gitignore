@@ -2,3 +2,4 @@
 venv/
 .idea/
 api/migrations/*.py
+local_settings.py

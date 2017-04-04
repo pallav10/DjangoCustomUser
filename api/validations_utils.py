@@ -43,3 +43,11 @@ def user_validation(pk):
 def user_token_validation(token_user_id, pk):
     if int(pk) != token_user_id:
         raise exceptions_utils.ValidationException(messages.TOKEN_UNAUTHORIZED, status.HTTP_401_UNAUTHORIZED)
+
+
+def user_validation_with_email(email):
+    try:
+        user = User.objects.get(email=email)
+        return user
+    except User.DoesNotExist:
+        raise exceptions_utils.ValidationException(messages.USER_WITH_EMAIL_DOES_NOT_EXISTS, status.HTTP_404_NOT_FOUND)

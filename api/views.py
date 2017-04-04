@@ -1,5 +1,12 @@
 import re
+# from time import timezone
+from django.utils import timezone
+
 from django.contrib.auth import authenticate
+from django.contrib.sites.shortcuts import get_current_site
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,9 +14,12 @@ from rest_framework.response import Response
 import utils
 import validations_utils
 from api import messages
+from api.forms import ResetPasswordForm
+from api.models import UserResetPassword
 from api.permission import UserPermissions
 from exceptions_utils import ValidationException
 from serializers import UserSerializer, UserProfileSerializer
+
 # Create your views here.
 
 
@@ -378,3 +388,96 @@ def user_change_password(request, pk):
                 return Response(password, status=status.HTTP_200_OK)
             except ValidationException as e:
                 return Response(e.errors, status=e.status)
+
+
+@api_view(['POST'])
+@permission_classes((AllowAny,))
+def password_reset(request):
+    """
+    **Password Reset**
+
+    * To reset user password.
+
+    ### POST
+
+    Send mail to the user on specified email address with the link to
+    reset password.
+
+    * Requires only the `email` address.
+
+    * Possible HTTP status codes and JSON response:
+
+        * `HTTP_404_NOT_FOUND` - If user with specified email is not found.
+
+                {
+                    'message': "User with specified email does not exist."
+                }
+
+        * `HTTP_200_OK` - When Password Reset Link is successfully sent.
+
+                {
+                    'message': "Password Reset Link sent."
+                }
+    :param request:
+    """
+    try:
+        data = request.data
+        data = validations_utils.email_validation(data)  # Validates email id, it returns lower-cased email in data.
+        user = validations_utils.user_validation_with_email(data['email'])
+    except ValidationException as e:  # Generic exception
+        return Response(e.errors, status=e.status)
+    current_site = get_current_site(request)
+    domain = current_site.domain
+    key = utils.create_reset_password_key(user.email)
+    utils.send_reset_password_mail(user, key, domain)  # Sends an email for resetting the password.
+    return Response(messages.PASSWORD_RESET_LINK_SENT, status=status.HTTP_200_OK)
+
+
+def password_reset_confirm(request, pk, key):
+    try:
+        user_reset_password = UserResetPassword.objects.get(users_id=pk)
+        error_message = ''
+    except UserResetPassword.DoesNotExist:
+        return HttpResponse(messages.USER_DOES_NOT_EXISTS)
+
+    if request.method == 'GET':
+        if user_reset_password.key_expires < timezone.now():
+            # return HttpResponse('Sorry! Link is expired :(')
+            error_message = "Sorry! Link is expired :("
+        else:
+            if user_reset_password.key == key:
+                user_reset_password.is_valid_key = True
+                user_reset_password.save()
+                url = '/api/users/%s/password_reset/done/' % pk
+                return HttpResponseRedirect(url)
+            else:
+                # return HttpResponse('Link is not valid. :(')
+                error_message = "Link is not valid. :("
+    return render(request, 'reset_password.html', {'error_message': error_message})
+
+
+def password_reset_done(request, pk):
+    try:
+        user_reset_password = UserResetPassword.objects.get(users_id=pk)
+        response = ''
+        success_message = ''
+    except UserResetPassword.DoesNotExist:
+        return HttpResponse("User does not exist.")
+
+    if request.method == 'POST':
+        reset_password_form = ResetPasswordForm(data=request.POST)
+        if reset_password_form.is_valid():
+            password = request.POST['new_password']
+            success_message = utils.reset_password(user_reset_password, password)
+        else:
+            # ResetPasswordForm.errors
+            response = messages.PASSWORD_MISMATCH
+    else:
+        reset_password_form = ResetPasswordForm()
+
+    return render(
+        request, 'reset_password.html',
+        {'form': reset_password_form,
+         'response': response,
+         'success_message': success_message}
+    )

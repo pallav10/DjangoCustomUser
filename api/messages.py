@@ -71,3 +71,15 @@ SAME_PASSWORD = {
 CURRENT_PASSWORD_INCORRECT = {
     MESSAGE: "Current password is incorrect."
 }
+
+USER_WITH_EMAIL_DOES_NOT_EXISTS = {
+    MESSAGE: "User with specified email does not exist."
+}
+
+PASSWORD_RESET_LINK_SENT = {
+    MESSAGE: "Password Reset Link sent."
+}
+
+PASSWORD_MISMATCH = {
+    MESSAGE: "Passwords does not match!"
+}
