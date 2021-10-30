@@ -19,7 +19,7 @@ djangorestframework==3.11.2
 flower==0.9.1
 futures==3.0.5
 itypes==1.1.0
-Jinja2==2.9.5
+Jinja2==2.11.3
 json2html==1.1.1
 kombu==4.0.2
 Markdown==2.6.8
