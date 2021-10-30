@@ -1,7 +1,7 @@
 amqp==2.1.4
 anyjson==0.3.3
 appdirs==1.4.3
-Babel==2.3.4
+Babel==2.9.1
 backports-abc==0.5
 backports.ssl-match-hostname==3.5.0.1
 billiard==3.5.0.2
